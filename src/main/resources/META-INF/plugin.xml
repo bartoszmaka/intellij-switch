@@ -1,0 +1,19 @@
+<idea-plugin>
+    <id>dev.bartoszmaka.toggle</id>
+    <name>Toggle</name>
+    <vendor email="bartoszmaka95@gmail.com">bartoszmaka</vendor>
+    <description><![CDATA[
+        Toggles the thing under the caret: booleans (true/false), single-character pairs
+        (+/-, &gt;/&lt;), and string quote styles. Configurable globally and per language.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- filled in later tasks -->
+    </extensions>
+
+    <actions>
+        <!-- filled in later tasks -->
+    </actions>
+</idea-plugin>
