@@ -91,8 +91,11 @@ class StringQuoteProviderTest : BasePlatformTestCase() {
     }
 
     fun testKotlinCaretOnClosingQuoteTriggers() {
+        // <caret> marker sits between `o` and `"`, which after fixture parsing places the
+        // caret offset exactly on the closing quote — i.e. range.endOffset - 1. Per the
+        // spec, this should trigger. (Earlier plan added +1 which moved past the closing
+        // quote into the "falls through" region; corrected here.)
         myFixture.configureByText("a.kt", "val s = \"hello<caret>\"")
-        myFixture.editor.caretModel.moveToOffset(myFixture.editor.caretModel.offset + 1)
         val match = provider.findToggle(
             myFixture.file,
             myFixture.editor,
