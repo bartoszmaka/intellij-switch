@@ -10,10 +10,19 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- filled in later tasks -->
+        <applicationService serviceImplementation="dev.bartoszmaka.toggle.settings.ToggleSettings"/>
+        <applicationConfigurable
+            parentId="tools"
+            instance="dev.bartoszmaka.toggle.settings.ToggleSettingsConfigurable"
+            id="dev.bartoszmaka.toggle.settings.ToggleSettingsConfigurable"
+            displayName="Toggle"/>
     </extensions>
 
     <actions>
-        <!-- filled in later tasks -->
+        <action
+            id="dev.bartoszmaka.toggle.ToggleAction"
+            class="dev.bartoszmaka.toggle.ToggleAction"
+            text="Toggle the Thing Under Caret"
+            description="Toggle boolean, operator, or quote under cursor"/>
     </actions>
 </idea-plugin>
