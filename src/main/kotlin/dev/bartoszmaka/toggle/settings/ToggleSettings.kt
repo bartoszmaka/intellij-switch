@@ -5,6 +5,7 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.util.xmlb.XmlSerializerUtil
 import dev.bartoszmaka.toggle.provider.EffectiveRules
 import dev.bartoszmaka.toggle.provider.ToggleGroup
@@ -27,23 +28,31 @@ class ToggleSettings : PersistentStateComponent<ToggleSettings.State> {
     fun getEffectiveRules(langId: String): EffectiveRules = effectiveRulesFor(langId)
 
     fun effectiveRulesFor(langId: String): EffectiveRules {
-        val globalWords = state.global.wordGroups.map { ToggleGroup(it.items) }
-        val globalChars = state.global.charGroups.map { ToggleGroup(it.items) }
-        val langRules = state.perLanguage[langId]
+        val lang = state.perLanguage[langId]
+        val langWord = lang?.wordGroups.orEmpty()
+            .mapNotNull { it.toToggleGroupOrNull(word = true) }
+        val langChar = lang?.charGroups.orEmpty()
+            .mapNotNull { it.toToggleGroupOrNull(word = false) }
+        val inherit = lang?.inheritsGlobal ?: true
+        val globalWord = if (inherit) state.global.wordGroups
+            .mapNotNull { it.toToggleGroupOrNull(word = true) } else emptyList()
+        val globalChar = if (inherit) state.global.charGroups
+            .mapNotNull { it.toToggleGroupOrNull(word = false) } else emptyList()
+        return EffectiveRules(
+            wordGroups = langWord + globalWord,
+            charGroups = langChar + globalChar,
+        )
+    }
 
-        val words = if (langRules?.inheritsGlobal != false) {
-            (langRules?.wordGroups?.map { ToggleGroup(it.items) } ?: emptyList()) + globalWords
-        } else {
-            langRules?.wordGroups?.map { ToggleGroup(it.items) } ?: emptyList()
+    private fun GroupState.toToggleGroupOrNull(word: Boolean): ToggleGroup? {
+        val items = items.toList()
+        val errs = if (word) ToggleGroupValidation.validateWordGroup(items)
+                   else ToggleGroupValidation.validateCharGroup(items)
+        if (errs.isNotEmpty()) {
+            thisLogger().warn("Skipping invalid toggle group: $items — ${errs.joinToString("; ")}")
+            return null
         }
-
-        val chars = if (langRules?.inheritsGlobal != false) {
-            (langRules?.charGroups?.map { ToggleGroup(it.items) } ?: emptyList()) + globalChars
-        } else {
-            langRules?.charGroups?.map { ToggleGroup(it.items) } ?: emptyList()
-        }
-
-        return EffectiveRules(words, chars)
+        return ToggleGroup(items)
     }
 
     data class State(
