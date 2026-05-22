@@ -1,12 +1,124 @@
 package dev.bartoszmaka.toggle.provider
 
-import org.junit.Test
-import org.junit.Assert.assertNotNull
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
-class StringQuoteProviderTest {
-    @Test
-    fun testProvider() {
-        val provider = StringQuoteProvider()
-        assertNotNull(provider)
+class StringQuoteProviderTest : BasePlatformTestCase() {
+
+    private val provider = StringQuoteProvider()
+
+    private fun runToggle(filename: String, before: String, expected: String) {
+        myFixture.configureByText(filename, before)
+        val match = provider.findToggle(
+            myFixture.file,
+            myFixture.editor,
+            myFixture.editor.caretModel.offset,
+            EffectiveRules(),
+        )
+        assertNotNull("provider returned null", match)
+        val toggle = match!!
+        WriteCommandAction.runWriteCommandAction(project) {
+            myFixture.editor.document.replaceString(
+                toggle.range.startOffset,
+                toggle.range.endOffset,
+                toggle.replacement,
+            )
+        }
+        assertEquals(expected, myFixture.editor.document.text)
+    }
+
+    fun testJavaFallbackReturnsNull() {
+        myFixture.configureByText(
+            "A.java",
+            "class A { String s = \"he<caret>llo\"; }",
+        )
+        val match = provider.findToggle(
+            myFixture.file,
+            myFixture.editor,
+            myFixture.editor.caretModel.offset,
+            EffectiveRules(),
+        )
+        assertNull(match)
+    }
+
+    fun testPlainTextReturnsNull() {
+        myFixture.configureByText("a.txt", "\"he<caret>llo\"")
+        val match = provider.findToggle(
+            myFixture.file,
+            myFixture.editor,
+            myFixture.editor.caretModel.offset,
+            EffectiveRules(),
+        )
+        assertNull(match)
+    }
+
+    fun testCaretAfterClosingQuoteFallsThrough() {
+        myFixture.configureByText(
+            "A.java",
+            "class A { String s = \"hello\"<caret>; }",
+        )
+        val match = provider.findToggle(
+            myFixture.file,
+            myFixture.editor,
+            myFixture.editor.caretModel.offset,
+            EffectiveRules(),
+        )
+        assertNull(match)
+    }
+
+    fun testKotlinDoubleToTriple() {
+        runToggle(
+            "a.kt",
+            "val s = \"hel<caret>lo\"",
+            "val s = \"\"\"hello\"\"\"",
+        )
+    }
+
+    fun testKotlinTripleToDouble() {
+        runToggle(
+            "a.kt",
+            "val s = \"\"\"hel<caret>lo\"\"\"",
+            "val s = \"hello\"",
+        )
+    }
+
+    fun testKotlinCaretOnOpeningQuoteTriggers() {
+        runToggle(
+            "a.kt",
+            "val s = <caret>\"hello\"",
+            "val s = \"\"\"hello\"\"\"",
+        )
+    }
+
+    fun testKotlinCaretOnClosingQuoteTriggers() {
+        myFixture.configureByText("a.kt", "val s = \"hello<caret>\"")
+        myFixture.editor.caretModel.moveToOffset(myFixture.editor.caretModel.offset + 1)
+        val match = provider.findToggle(
+            myFixture.file,
+            myFixture.editor,
+            myFixture.editor.caretModel.offset,
+            EffectiveRules(),
+        )
+        assertNotNull(match)
+    }
+
+    fun testTransformEscapesNewSingleDelimiter() {
+        assertEquals("it\\'s", provider.transformContent("it's", "\"", "'"))
+    }
+
+    fun testTransformPreservesNewlineEscape() {
+        assertEquals("line\\nbreak", provider.transformContent("line\\nbreak", "\"", "'"))
+    }
+
+    fun testTransformPreservesBackslashEscape() {
+        assertEquals("path\\\\to\\\\file", provider.transformContent("path\\\\to\\\\file", "\"", "'"))
+    }
+
+    fun testTransformPreservesUnicodeEscape() {
+        assertEquals("u\\u0041", provider.transformContent("u\\u0041", "\"", "'"))
+    }
+
+    fun testTransformIsNoOpForMultiCharDelim() {
+        assertEquals("has \" inside", provider.transformContent("has \" inside", "\"", "\"\"\""))
     }
 }
