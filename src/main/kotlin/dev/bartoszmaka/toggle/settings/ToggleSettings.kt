@@ -1,5 +1,6 @@
 package dev.bartoszmaka.toggle.settings
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
@@ -23,7 +24,9 @@ class ToggleSettings : PersistentStateComponent<ToggleSettings.State> {
         XmlSerializerUtil.copyBean(state, this.state)
     }
 
-    fun getEffectiveRules(langId: String): EffectiveRules {
+    fun getEffectiveRules(langId: String): EffectiveRules = effectiveRulesFor(langId)
+
+    fun effectiveRulesFor(langId: String): EffectiveRules {
         val globalWords = state.global.wordGroups.map { ToggleGroup(it.items) }
         val globalChars = state.global.charGroups.map { ToggleGroup(it.items) }
         val langRules = state.perLanguage[langId]
@@ -44,8 +47,8 @@ class ToggleSettings : PersistentStateComponent<ToggleSettings.State> {
     }
 
     data class State(
-        var global: LanguageRulesState = LanguageRulesState(),
-        var perLanguage: MutableMap<String, LanguageRulesState> = mutableMapOf(),
+        var global: LanguageRulesState = defaultGlobalState(),
+        var perLanguage: MutableMap<String, LanguageRulesState> = defaultPerLanguageState(),
     )
 
     data class LanguageRulesState(
@@ -57,4 +60,39 @@ class ToggleSettings : PersistentStateComponent<ToggleSettings.State> {
     data class GroupState(
         var items: MutableList<String> = mutableListOf(),
     )
+
+    companion object {
+        fun getInstance(): ToggleSettings =
+            ApplicationManager.getApplication().getService(ToggleSettings::class.java)
+
+        fun defaultGlobalState(): LanguageRulesState = LanguageRulesState(
+            wordGroups = Defaults.globalWordGroups
+                .map { GroupState(it.items.toMutableList()) }
+                .toMutableList(),
+            charGroups = Defaults.globalCharGroups
+                .map { GroupState(it.items.toMutableList()) }
+                .toMutableList(),
+            inheritsGlobal = false,
+        )
+
+        fun defaultPerLanguageState(): MutableMap<String, LanguageRulesState> {
+            val state = mutableMapOf<String, LanguageRulesState>()
+            val languages = Defaults.languageWordGroups.keys + Defaults.languageCharGroups.keys
+            for (language in languages) {
+                state[language] = LanguageRulesState(
+                    wordGroups = Defaults.languageWordGroups[language].orEmpty()
+                        .map { GroupState(it.items.toMutableList()) }
+                        .toMutableList(),
+                    charGroups = Defaults.languageCharGroups[language].orEmpty()
+                        .map { GroupState(it.items.toMutableList()) }
+                        .toMutableList(),
+                    inheritsGlobal = true,
+                )
+            }
+            return state
+        }
+    }
 }
+
+typealias LanguageRulesState = ToggleSettings.LanguageRulesState
+typealias GroupState = ToggleSettings.GroupState
