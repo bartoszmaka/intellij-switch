@@ -49,8 +49,7 @@ class WordToggleProvider : ToggleProvider {
         val nextIdx = (currentIdx + 1) % group.items.size
         val nextItem = group.items[nextIdx]
 
-        // Apply casing if all items are lowercase
-        if (group.items.all { it.all { c -> c.isLowerCase() || !c.isLetter() } }) {
+        if (group.isAsciiLowercaseGroup()) {
             val detected = Casing.detect(original)
             return Casing.apply(nextItem, detected)
         }
@@ -63,11 +62,15 @@ class WordToggleProvider : ToggleProvider {
         val exactIdx = this.indexOf(word)
         if (exactIdx >= 0) return exactIdx
 
-        // Then try case-insensitive if the list is all lowercase
-        if (this.all { it.all { c -> c.isLowerCase() || !c.isLetter() } }) {
+        if (isAsciiLowercaseGroup()) {
             return this.indexOfFirst { it.equals(word, ignoreCase = true) }
         }
 
         return -1
     }
+
+    private fun ToggleGroup.isAsciiLowercaseGroup(): Boolean = items.isAsciiLowercaseGroup()
+
+    private fun List<String>.isAsciiLowercaseGroup(): Boolean =
+        all { item -> item.isNotEmpty() && item.all { c -> c in 'a'..'z' } }
 }
