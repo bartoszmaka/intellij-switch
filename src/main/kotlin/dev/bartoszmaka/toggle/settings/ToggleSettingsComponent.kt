@@ -102,7 +102,7 @@ class ToggleSettingsComponent {
                 languageList.setSelectedValue(id, true)
             }
             .createPopup()
-        popup.showInBestPositionFor(languageList)
+        popup.showInCenterOf(languageList)
     }
 
     private fun removeSelectedLanguage() {
