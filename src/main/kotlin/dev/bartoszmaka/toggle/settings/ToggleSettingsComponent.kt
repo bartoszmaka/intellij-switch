@@ -1,111 +1,335 @@
 package dev.bartoszmaka.toggle.settings
 
-import com.intellij.openapi.components.service
+import com.intellij.lang.Language
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.ui.CollectionListModel
 import com.intellij.ui.ToolbarDecorator
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBList
+import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.table.JBTable
+import java.awt.BorderLayout
+import java.awt.Dimension
 import javax.swing.BorderFactory
+import javax.swing.Box
+import javax.swing.BoxLayout
+import javax.swing.DefaultListCellRenderer
 import javax.swing.JButton
-import javax.swing.JCheckBox
 import javax.swing.JComponent
 import javax.swing.JList
 import javax.swing.JPanel
-import javax.swing.JScrollPane
 import javax.swing.JTextArea
-import javax.swing.ListSelectionModel
-import javax.swing.table.AbstractTableModel
-import java.awt.BorderLayout
-import java.awt.FlowLayout
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
 
 class ToggleSettingsComponent {
 
-    val panel: JPanel = JPanel(BorderLayout())
-    private var initialized = false
-    private var modified = false
+    private val state = ToggleSettings.getInstance().state
+    private val working: ToggleSettings.State = copyOf(state)
 
-    private val languages = mutableListOf("Global")
-    private val languageList = JList(languages.toTypedArray())
-    private val wordTable = JBTable(WordTableModel())
-    private val charTable = JBTable(CharTableModel())
-    private val inheritCheckbox = JCheckBox("Inherit from Global", true)
+    private val languageListModel = CollectionListModel<String>().apply {
+        add(GLOBAL_LANGUAGE)
+        working.perLanguage.keys.sorted().forEach { add(it) }
+    }
+    private val languageList = JBList(languageListModel).apply {
+        selectedIndex = 0
+        addListSelectionListener {
+            if (!it.valueIsAdjusting) refreshRightPane()
+        }
+    }
 
-    private val settings: ToggleSettings = service()
-    private var currentState: ToggleSettings.State? = null
-    private var currentLang: String? = null
+    private val rightPane = JBPanel<JBPanel<*>>(BorderLayout())
+    private val inheritCheckBox = JBCheckBox("Inherit from Global")
+
+    private val wordGroupsModel = CollectionListModel<List<String>>()
+    private val charGroupsModel = CollectionListModel<List<String>>()
+    private val wordGroupsList = JBList(wordGroupsModel).apply {
+        cellRenderer = GroupCellRenderer()
+    }
+    private val charGroupsList = JBList(charGroupsModel).apply {
+        cellRenderer = GroupCellRenderer()
+    }
+
+    val panel: JComponent
 
     init {
-        buildUI()
-        loadSettings()
-        initialized = true
+        val left = JPanel(BorderLayout()).apply {
+            preferredSize = Dimension(200, 0)
+            border = BorderFactory.createTitledBorder("Languages")
+            add(JBScrollPane(languageList), BorderLayout.CENTER)
+            add(buildLanguageToolbar(), BorderLayout.SOUTH)
+        }
+        panel = JPanel(BorderLayout()).apply {
+            add(left, BorderLayout.WEST)
+            add(rightPane, BorderLayout.CENTER)
+        }
+        refreshRightPane()
     }
 
-    private fun buildUI() {
-        val splitPane = JPanel(BorderLayout())
-
-        // Left pane: language list
-        val leftPane = JPanel(BorderLayout())
-        languageList.selectionMode = ListSelectionModel.SINGLE_SELECTION
-        languageList.addListSelectionListener { loadLanguage(languageList.selectedValue) }
-        leftPane.add(JBScrollPane(languageList), BorderLayout.CENTER)
-
-        val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT))
-        val addButton = JButton("+ Add language…")
-        buttonPanel.add(addButton)
-        leftPane.add(buttonPanel, BorderLayout.SOUTH)
-        splitPane.add(leftPane, BorderLayout.WEST)
-
-        // Right pane: settings tables
-        val rightPane = JPanel(BorderLayout())
-        rightPane.add(JBLabel("Word Groups"), BorderLayout.NORTH)
-        val wordDecorated = ToolbarDecorator.createDecorator(wordTable)
-            .createPanel()
-        rightPane.add(wordDecorated, BorderLayout.CENTER)
-
-        rightPane.add(JBLabel("Character Groups"), BorderLayout.SOUTH)
-        val charDecorated = ToolbarDecorator.createDecorator(charTable)
-            .createPanel()
-        rightPane.add(charDecorated, BorderLayout.SOUTH)
-
-        rightPane.add(inheritCheckbox, BorderLayout.SOUTH)
-
-        splitPane.add(rightPane, BorderLayout.CENTER)
-        panel.add(splitPane, BorderLayout.CENTER)
+    private fun buildLanguageToolbar(): JComponent {
+        val addButton = JButton("Add language...").apply {
+            addActionListener { showAddLanguagePopup() }
+        }
+        val removeButton = JButton("Remove").apply {
+            addActionListener { removeSelectedLanguage() }
+        }
+        return Box.createHorizontalBox().apply {
+            add(addButton)
+            add(removeButton)
+            add(Box.createHorizontalGlue())
+        }
     }
 
-    private fun loadSettings() {
-        val state = settings.getState() ?: ToggleSettings.State()
-        currentState = state
+    private fun showAddLanguagePopup() {
+        val existing = working.perLanguage.keys
+        val candidates = Language.getRegisteredLanguages()
+            .map { it.id }
+            .filter { it.isNotEmpty() && it != GLOBAL_LANGUAGE && it !in existing }
+            .sorted()
+        val popup = JBPopupFactory.getInstance()
+            .createPopupChooserBuilder(candidates)
+            .setTitle("Add Language")
+            .setItemChosenCallback { id ->
+                working.perLanguage[id] = LanguageRulesState(
+                    wordGroups = mutableListOf(),
+                    charGroups = mutableListOf(),
+                    inheritsGlobal = true,
+                )
+                languageListModel.add(id)
+                languageList.setSelectedValue(id, true)
+            }
+            .createPopup()
+        popup.showInBestPositionFor(languageList)
     }
 
-    private fun loadLanguage(lang: String) {
-        currentLang = lang
-        modified = true
+    private fun removeSelectedLanguage() {
+        val selected = languageList.selectedValue ?: return
+        if (selected == GLOBAL_LANGUAGE) return
+        working.perLanguage.remove(selected)
+        languageListModel.remove(selected)
+        languageList.selectedIndex = 0
+        refreshRightPane()
     }
 
-    fun isModified(): Boolean = modified
+    private fun refreshRightPane() {
+        rightPane.removeAll()
+        val selected = languageList.selectedValue ?: GLOBAL_LANGUAGE
+        val rules = if (selected == GLOBAL_LANGUAGE) {
+            working.global
+        } else {
+            working.perLanguage.getOrPut(selected) {
+                LanguageRulesState(mutableListOf(), mutableListOf(), inheritsGlobal = true)
+            }
+        }
+
+        wordGroupsModel.removeAll()
+        rules.wordGroups.forEach { wordGroupsModel.add(it.items.toList()) }
+        charGroupsModel.removeAll()
+        rules.charGroups.forEach { charGroupsModel.add(it.items.toList()) }
+
+        val inheritPanel = Box.createHorizontalBox().apply {
+            border = BorderFactory.createEmptyBorder(6, 6, 6, 6)
+            if (selected == GLOBAL_LANGUAGE) {
+                add(JBLabel("Default rules applied to all languages."))
+            } else {
+                inheritCheckBox.isSelected = rules.inheritsGlobal
+                inheritCheckBox.actionListeners.forEach { inheritCheckBox.removeActionListener(it) }
+                inheritCheckBox.addActionListener {
+                    rules.inheritsGlobal = inheritCheckBox.isSelected
+                }
+                add(inheritCheckBox)
+            }
+            add(Box.createHorizontalGlue())
+        }
+
+        val stacked = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            add(inheritPanel)
+            add(buildGroupSection("Word groups", wordGroupsList, wordGroupsModel, true, rules))
+            add(buildGroupSection("Character groups", charGroupsList, charGroupsModel, false, rules))
+        }
+        rightPane.add(stacked, BorderLayout.CENTER)
+        rightPane.revalidate()
+        rightPane.repaint()
+    }
+
+    private fun buildGroupSection(
+        title: String,
+        list: JBList<List<String>>,
+        model: CollectionListModel<List<String>>,
+        isWord: Boolean,
+        rules: LanguageRulesState,
+    ): JComponent {
+        val decorator = ToolbarDecorator.createDecorator(list)
+            .setAddAction { showEditDialog(null, isWord) { appendGroup(it, model, rules, isWord) } }
+            .setRemoveAction {
+                val index = list.selectedIndex
+                if (index >= 0) {
+                    model.remove(index)
+                    if (isWord) rules.wordGroups.removeAt(index) else rules.charGroups.removeAt(index)
+                }
+            }
+            .setEditAction {
+                val index = list.selectedIndex
+                if (index >= 0) {
+                    showEditDialog(model.getElementAt(index), isWord) { items ->
+                        model.setElementAt(items, index)
+                        val groupState = GroupState(items.toMutableList())
+                        if (isWord) {
+                            rules.wordGroups[index] = groupState
+                        } else {
+                            rules.charGroups[index] = groupState
+                        }
+                    }
+                }
+            }
+        return JPanel(BorderLayout()).apply {
+            border = BorderFactory.createTitledBorder(title)
+            add(decorator.createPanel(), BorderLayout.CENTER)
+        }
+    }
+
+    private fun appendGroup(
+        items: List<String>,
+        model: CollectionListModel<List<String>>,
+        rules: LanguageRulesState,
+        isWord: Boolean,
+    ) {
+        model.add(items)
+        val groupState = GroupState(items.toMutableList())
+        if (isWord) rules.wordGroups.add(groupState) else rules.charGroups.add(groupState)
+    }
+
+    private fun showEditDialog(initial: List<String>?, isWord: Boolean, onAccept: (List<String>) -> Unit) {
+        val dialog = GroupEditDialog(initial.orEmpty(), isWord)
+        if (dialog.showAndGet()) onAccept(dialog.result)
+    }
+
+    fun isModified(): Boolean = !state.contentEquals(working)
 
     fun apply() {
-        modified = false
+        state.global = copyLR(working.global)
+        state.perLanguage = working.perLanguage
+            .mapValues { copyLR(it.value) }
+            .toMutableMap()
     }
 
     fun reset() {
-        loadSettings()
-        modified = false
+        val fresh = copyOf(state)
+        working.global = fresh.global
+        working.perLanguage = fresh.perLanguage
+        rebuildLanguageList()
     }
 
-    private inner class WordTableModel : AbstractTableModel() {
-        override fun getRowCount(): Int = 0
-        override fun getColumnCount(): Int = 1
-        override fun getColumnName(column: Int): String = "Word Groups"
-        override fun getValueAt(rowIndex: Int, columnIndex: Int): Any = ""
+    fun restoreDefaults() {
+        working.global = ToggleSettings.defaultGlobalState()
+        working.perLanguage = ToggleSettings.defaultPerLanguageState()
+        rebuildLanguageList()
     }
 
-    private inner class CharTableModel : AbstractTableModel() {
-        override fun getRowCount(): Int = 0
-        override fun getColumnCount(): Int = 1
-        override fun getColumnName(column: Int): String = "Character Groups"
-        override fun getValueAt(rowIndex: Int, columnIndex: Int): Any = ""
+    private fun rebuildLanguageList() {
+        languageListModel.removeAll()
+        languageListModel.add(GLOBAL_LANGUAGE)
+        working.perLanguage.keys.sorted().forEach { languageListModel.add(it) }
+        languageList.selectedIndex = 0
+        refreshRightPane()
+    }
+
+    private fun copyOf(s: ToggleSettings.State): ToggleSettings.State {
+        val out = ToggleSettings.State()
+        out.global = copyLR(s.global)
+        out.perLanguage = s.perLanguage
+            .mapValues { copyLR(it.value) }
+            .toMutableMap()
+        return out
+    }
+
+    private fun copyLR(s: LanguageRulesState): LanguageRulesState = LanguageRulesState(
+        wordGroups = s.wordGroups.map { GroupState(it.items.toMutableList()) }.toMutableList(),
+        charGroups = s.charGroups.map { GroupState(it.items.toMutableList()) }.toMutableList(),
+        inheritsGlobal = s.inheritsGlobal,
+    )
+
+    private fun ToggleSettings.State.contentEquals(other: ToggleSettings.State): Boolean {
+        if (!global.contentEquals(other.global)) return false
+        if (perLanguage.keys != other.perLanguage.keys) return false
+        for ((language, rules) in perLanguage) {
+            val otherRules = other.perLanguage[language] ?: return false
+            if (!rules.contentEquals(otherRules)) return false
+        }
+        return true
+    }
+
+    private fun LanguageRulesState.contentEquals(other: LanguageRulesState): Boolean =
+        inheritsGlobal == other.inheritsGlobal &&
+            wordGroups.map { it.items } == other.wordGroups.map { it.items } &&
+            charGroups.map { it.items } == other.charGroups.map { it.items }
+
+    private class GroupCellRenderer : javax.swing.ListCellRenderer<List<String>> {
+        private val delegate = DefaultListCellRenderer()
+
+        override fun getListCellRendererComponent(
+            list: JList<out List<String>>?,
+            value: List<String>?,
+            index: Int,
+            isSelected: Boolean,
+            cellHasFocus: Boolean,
+        ): java.awt.Component {
+            val text = value?.joinToString(", ") ?: ""
+            return delegate.getListCellRendererComponent(list, text, index, isSelected, cellHasFocus)
+        }
+    }
+
+    private class GroupEditDialog(initial: List<String>, private val isWord: Boolean) : DialogWrapper(true) {
+        private val area = JTextArea(initial.joinToString("\n"), 10, 30)
+        lateinit var result: List<String>
+
+        init {
+            title = if (isWord) "Edit Word Group" else "Edit Character Group"
+            init()
+            area.document.addDocumentListener(object : DocumentListener {
+                override fun insertUpdate(e: DocumentEvent) = startTrackingValidation()
+                override fun removeUpdate(e: DocumentEvent) = startTrackingValidation()
+                override fun changedUpdate(e: DocumentEvent) = startTrackingValidation()
+            })
+            startTrackingValidation()
+        }
+
+        override fun createCenterPanel(): JComponent {
+            val label = if (isWord) {
+                "One identifier per line (e.g. true, false). Min 2 items."
+            } else {
+                "One single-character item per line. Min 2 items."
+            }
+            return JPanel(BorderLayout()).apply {
+                add(JBLabel(label), BorderLayout.NORTH)
+                add(JBScrollPane(area), BorderLayout.CENTER)
+            }
+        }
+
+        override fun doValidate(): ValidationInfo? {
+            val items = parsedItems()
+            val errors = if (isWord) {
+                ToggleGroupValidation.validateWordGroup(items)
+            } else {
+                ToggleGroupValidation.validateCharGroup(items)
+            }
+            return if (errors.isEmpty()) null else ValidationInfo(errors.joinToString("; "), area)
+        }
+
+        override fun doOKAction() {
+            result = parsedItems()
+            super.doOKAction()
+        }
+
+        private fun parsedItems(): List<String> =
+            area.text.lines().map { it.trim() }.filter { it.isNotEmpty() }
+    }
+
+    private companion object {
+        const val GLOBAL_LANGUAGE = "Global"
     }
 }
