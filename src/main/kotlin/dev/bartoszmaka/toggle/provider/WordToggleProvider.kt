@@ -6,7 +6,6 @@ import com.intellij.psi.PsiFile
 import dev.bartoszmaka.toggle.util.Casing
 
 class WordToggleProvider : ToggleProvider {
-    private val WORD_RX = Regex("[A-Za-z_][A-Za-z0-9_]*")
 
     override fun findToggle(
         file: PsiFile,
@@ -14,63 +13,67 @@ class WordToggleProvider : ToggleProvider {
         caretOffset: Int,
         rules: EffectiveRules,
     ): ToggleMatch? {
-        val text = editor.document.text
-        if (caretOffset < 0 || caretOffset > text.length) return null
+        val match = findToggleInText(editor.document.text, caretOffset, rules.wordGroups)
+            ?: return null
+        return ToggleMatch(
+            range = TextRange(match.start, match.endExclusive),
+            replacement = match.replacement,
+        )
+    }
 
-        // Find word boundaries around caret
-        var start = caretOffset
-        while (start > 0 && text[start - 1].let { it.isLetterOrDigit() || it == '_' }) {
-            start--
-        }
-        var end = caretOffset
-        while (end < text.length && text[end].let { it.isLetterOrDigit() || it == '_' }) {
-            end++
-        }
+    data class RawMatch(val start: Int, val endExclusive: Int, val replacement: String)
 
-        if (start == end || start >= text.length) return null
+    companion object {
+        private fun isIdentStart(c: Char) = c == '_' || c in 'A'..'Z' || c in 'a'..'z'
+        private fun isIdentPart(c: Char) = isIdentStart(c) || c in '0'..'9'
 
-        val word = text.substring(start, end)
-        if (!WORD_RX.matches(word)) return null
+        private fun wordBoundsAt(text: String, offset: Int): Pair<Int, Int>? {
+            val n = text.length
+            // First decide which character (if any) the caret is "on".
+            // Treat both `text[offset]` and `text[offset - 1]` as candidates.
+            val onChar = offset in 0 until n && isIdentPart(text[offset])
+            val behindChar = offset > 0 && offset <= n && isIdentPart(text[offset - 1])
+            if (!onChar && !behindChar) return null
 
-        // Try to match in word groups
-        val allGroups = rules.wordGroups
-        for (group in allGroups) {
-            val idx = group.items.indexOfAny(word)
-            if (idx >= 0) {
-                val replacement = findReplacement(word, group, idx)
-                return ToggleMatch(TextRange(start, end), replacement)
+            // Expand from whichever side hits a word char first; prefer the one under the caret.
+            val anchor = when {
+                onChar -> offset
+                else -> offset - 1
             }
+            var start = anchor
+            while (start > 0 && isIdentPart(text[start - 1])) start--
+            var end = anchor
+            while (end < n && isIdentPart(text[end])) end++
+            // Validate identifier-start.
+            if (!isIdentStart(text[start])) return null
+            return start to end
         }
 
-        return null
-    }
+        private fun isAllLowercaseAscii(items: List<String>): Boolean =
+            items.all { s -> s.isNotEmpty() && s.all { it in 'a'..'z' } }
 
-    private fun findReplacement(original: String, group: ToggleGroup, currentIdx: Int): String {
-        val nextIdx = (currentIdx + 1) % group.items.size
-        val nextItem = group.items[nextIdx]
+        fun findToggleInText(
+            text: String,
+            caretOffset: Int,
+            groups: List<ToggleGroup>,
+        ): RawMatch? {
+            val (start, end) = wordBoundsAt(text, caretOffset) ?: return null
+            val word = text.substring(start, end)
 
-        if (group.isAsciiLowercaseGroup()) {
-            val detected = Casing.detect(original)
-            return Casing.apply(nextItem, detected)
+            for (group in groups) {
+                val lowercaseGroup = isAllLowercaseAscii(group.items)
+                val matchIdx = if (lowercaseGroup) {
+                    val needle = word.lowercase()
+                    group.items.indexOfFirst { it == needle }
+                } else {
+                    group.items.indexOf(word)
+                }
+                if (matchIdx < 0) continue
+                val next = group.items[(matchIdx + 1) % group.items.size]
+                val replacement = if (lowercaseGroup) Casing.apply(next, Casing.detect(word)) else next
+                return RawMatch(start, end, replacement)
+            }
+            return null
         }
-
-        return nextItem
     }
-
-    private fun List<String>.indexOfAny(word: String): Int {
-        // First try case-sensitive match
-        val exactIdx = this.indexOf(word)
-        if (exactIdx >= 0) return exactIdx
-
-        if (isAsciiLowercaseGroup()) {
-            return this.indexOfFirst { it.equals(word, ignoreCase = true) }
-        }
-
-        return -1
-    }
-
-    private fun ToggleGroup.isAsciiLowercaseGroup(): Boolean = items.isAsciiLowercaseGroup()
-
-    private fun List<String>.isAsciiLowercaseGroup(): Boolean =
-        all { item -> item.isNotEmpty() && item.all { c -> c in 'a'..'z' } }
 }
