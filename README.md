@@ -25,6 +25,16 @@ The resulting plugin zip is at `build/distributions/toggle-*.zip`. Install via *
 2. Position the caret on a boolean, operator, or quote and press your bound key.
 3. Customize toggles via **Preferences → Tools → Toggle**.
 
+Action id: `dev.bartoszmaka.toggle.ToggleAction`.
+
+### IdeaVim
+
+Add a mapping in `~/.ideavimrc`:
+
+```vim
+nnoremap <leader>t :action dev.bartoszmaka.toggle.ToggleAction<CR>
+```
+
 ## Configuration
 
 ### Global Settings

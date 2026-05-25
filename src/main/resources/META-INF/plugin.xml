@@ -5,6 +5,11 @@
     <description><![CDATA[
         Toggles the thing under the caret: booleans (true/false), single-character pairs
         (+/-, &gt;/&lt;), and string quote styles. Configurable globally and per language.
+        <br/><br/>
+        <b>Action:</b> <code>Toggle the Thing Under Caret</code>
+        (id: <code>dev.bartoszmaka.toggle.ToggleAction</code>).
+        Bind via <i>Settings &rarr; Keymap</i>, or map it in <a href="https://plugins.jetbrains.com/plugin/164-ideavim">IdeaVim</a>:
+        <pre>nnoremap &lt;leader&gt;t :action dev.bartoszmaka.toggle.ToggleAction&lt;CR&gt;</pre>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
