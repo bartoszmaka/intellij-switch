@@ -1,4 +1,4 @@
-package dev.bartoszmaka.toggle.util
+package dev.bartoszmaka.switch.util
 
 enum class Casing {
     LOWER, UPPER, TITLE, OTHER;

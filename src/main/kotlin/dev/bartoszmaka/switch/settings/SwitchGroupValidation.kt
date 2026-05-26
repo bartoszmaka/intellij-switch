@@ -1,6 +1,6 @@
-package dev.bartoszmaka.toggle.settings
+package dev.bartoszmaka.switch.settings
 
-object ToggleGroupValidation {
+object SwitchGroupValidation {
     private val IDENT = Regex("^[A-Za-z_][A-Za-z0-9_]*$")
 
     fun validateWordGroup(items: List<String>): List<String> {

@@ -1,16 +1,16 @@
-package dev.bartoszmaka.toggle.settings
+package dev.bartoszmaka.switch.settings
 
 import com.intellij.openapi.options.Configurable
 import javax.swing.JComponent
 
-class ToggleSettingsConfigurable : Configurable {
+class SwitchSettingsConfigurable : Configurable {
 
-    private var component: ToggleSettingsComponent? = null
+    private var component: SwitchSettingsComponent? = null
 
-    override fun getDisplayName(): String = "Toggle"
+    override fun getDisplayName(): String = "Switch"
 
     override fun createComponent(): JComponent {
-        val c = ToggleSettingsComponent()
+        val c = SwitchSettingsComponent()
         component = c
         return c.panel
     }

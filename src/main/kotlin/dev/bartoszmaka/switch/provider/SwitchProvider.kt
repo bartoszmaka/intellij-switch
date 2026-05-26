@@ -1,26 +1,26 @@
-package dev.bartoszmaka.toggle.provider
+package dev.bartoszmaka.switch.provider
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 
-data class ToggleGroup(val items: List<String>)
+data class SwitchGroup(val items: List<String>)
 
 data class EffectiveRules(
-    val wordGroups: List<ToggleGroup> = emptyList(),
-    val charGroups: List<ToggleGroup> = emptyList(),
+    val wordGroups: List<SwitchGroup> = emptyList(),
+    val charGroups: List<SwitchGroup> = emptyList(),
 )
 
-data class ToggleMatch(
+data class SwitchMatch(
     val range: TextRange,
     val replacement: String,
 )
 
-interface ToggleProvider {
-    fun findToggle(
+interface SwitchProvider {
+    fun findSwitch(
         file: PsiFile,
         editor: Editor,
         caretOffset: Int,
         rules: EffectiveRules,
-    ): ToggleMatch?
+    ): SwitchMatch?
 }

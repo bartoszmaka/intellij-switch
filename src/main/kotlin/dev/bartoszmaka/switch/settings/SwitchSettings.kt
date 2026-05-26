@@ -1,4 +1,4 @@
-package dev.bartoszmaka.toggle.settings
+package dev.bartoszmaka.switch.settings
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
@@ -7,15 +7,15 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.util.xmlb.XmlSerializerUtil
-import dev.bartoszmaka.toggle.provider.EffectiveRules
-import dev.bartoszmaka.toggle.provider.ToggleGroup
+import dev.bartoszmaka.switch.provider.EffectiveRules
+import dev.bartoszmaka.switch.provider.SwitchGroup
 
 @Service
 @State(
-    name = "Toggle",
-    storages = [Storage("toggle.xml")]
+    name = "Switch",
+    storages = [Storage("switch.xml")]
 )
-class ToggleSettings : PersistentStateComponent<ToggleSettings.State> {
+class SwitchSettings : PersistentStateComponent<SwitchSettings.State> {
 
     private var state = State()
 
@@ -30,29 +30,29 @@ class ToggleSettings : PersistentStateComponent<ToggleSettings.State> {
     fun effectiveRulesFor(langId: String): EffectiveRules {
         val lang = state.perLanguage[langId]
         val langWord = lang?.wordGroups.orEmpty()
-            .mapNotNull { it.toToggleGroupOrNull(word = true) }
+            .mapNotNull { it.toSwitchGroupOrNull(word = true) }
         val langChar = lang?.charGroups.orEmpty()
-            .mapNotNull { it.toToggleGroupOrNull(word = false) }
+            .mapNotNull { it.toSwitchGroupOrNull(word = false) }
         val inherit = lang?.inheritsGlobal ?: true
         val globalWord = if (inherit) state.global.wordGroups
-            .mapNotNull { it.toToggleGroupOrNull(word = true) } else emptyList()
+            .mapNotNull { it.toSwitchGroupOrNull(word = true) } else emptyList()
         val globalChar = if (inherit) state.global.charGroups
-            .mapNotNull { it.toToggleGroupOrNull(word = false) } else emptyList()
+            .mapNotNull { it.toSwitchGroupOrNull(word = false) } else emptyList()
         return EffectiveRules(
             wordGroups = langWord + globalWord,
             charGroups = langChar + globalChar,
         )
     }
 
-    private fun GroupState.toToggleGroupOrNull(word: Boolean): ToggleGroup? {
+    private fun GroupState.toSwitchGroupOrNull(word: Boolean): SwitchGroup? {
         val items = items.toList()
-        val errs = if (word) ToggleGroupValidation.validateWordGroup(items)
-                   else ToggleGroupValidation.validateCharGroup(items)
+        val errs = if (word) SwitchGroupValidation.validateWordGroup(items)
+                   else SwitchGroupValidation.validateCharGroup(items)
         if (errs.isNotEmpty()) {
-            thisLogger().warn("Skipping invalid toggle group: $items — ${errs.joinToString("; ")}")
+            thisLogger().warn("Skipping invalid switch group: $items — ${errs.joinToString("; ")}")
             return null
         }
-        return ToggleGroup(items)
+        return SwitchGroup(items)
     }
 
     data class State(
@@ -71,8 +71,8 @@ class ToggleSettings : PersistentStateComponent<ToggleSettings.State> {
     )
 
     companion object {
-        fun getInstance(): ToggleSettings =
-            ApplicationManager.getApplication().getService(ToggleSettings::class.java)
+        fun getInstance(): SwitchSettings =
+            ApplicationManager.getApplication().getService(SwitchSettings::class.java)
 
         fun defaultGlobalState(): LanguageRulesState = LanguageRulesState(
             wordGroups = Defaults.globalWordGroups
@@ -103,5 +103,5 @@ class ToggleSettings : PersistentStateComponent<ToggleSettings.State> {
     }
 }
 
-typealias LanguageRulesState = ToggleSettings.LanguageRulesState
-typealias GroupState = ToggleSettings.GroupState
+typealias LanguageRulesState = SwitchSettings.LanguageRulesState
+typealias GroupState = SwitchSettings.GroupState

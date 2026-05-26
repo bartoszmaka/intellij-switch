@@ -1,1 +1,1 @@
-rootProject.name = "toggle"
+rootProject.name = "switch"

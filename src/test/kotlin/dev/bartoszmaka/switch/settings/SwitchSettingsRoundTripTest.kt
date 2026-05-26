@@ -1,16 +1,16 @@
-package dev.bartoszmaka.toggle.settings
+package dev.bartoszmaka.switch.settings
 
 import com.intellij.util.xmlb.XmlSerializer
-import dev.bartoszmaka.toggle.provider.EffectiveRules
-import dev.bartoszmaka.toggle.provider.ToggleGroup
+import dev.bartoszmaka.switch.provider.EffectiveRules
+import dev.bartoszmaka.switch.provider.SwitchGroup
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ToggleSettingsRoundTripTest {
+class SwitchSettingsRoundTripTest {
 
     @Test fun round_trip_preserves_state() {
-        val original = ToggleSettings.State().apply {
+        val original = SwitchSettings.State().apply {
             global = LanguageRulesState(
                 wordGroups = mutableListOf(GroupState(mutableListOf("true", "false"))),
                 charGroups = mutableListOf(GroupState(mutableListOf("+", "-"))),
@@ -24,7 +24,7 @@ class ToggleSettingsRoundTripTest {
         }
 
         val element = XmlSerializer.serialize(original)
-        val deserialized = XmlSerializer.deserialize(element, ToggleSettings.State::class.java)
+        val deserialized = XmlSerializer.deserialize(element, SwitchSettings.State::class.java)
 
         assertEquals(original.global.wordGroups.size, deserialized.global.wordGroups.size)
         assertEquals(
@@ -38,8 +38,8 @@ class ToggleSettingsRoundTripTest {
     }
 
     @Test fun effective_rules_language_first_then_global() {
-        val settings = ToggleSettings()
-        settings.loadState(ToggleSettings.State().apply {
+        val settings = SwitchSettings()
+        settings.loadState(SwitchSettings.State().apply {
             global = LanguageRulesState(
                 wordGroups = mutableListOf(GroupState(mutableListOf("true", "false"))),
                 charGroups = mutableListOf(),
@@ -57,8 +57,8 @@ class ToggleSettingsRoundTripTest {
     }
 
     @Test fun effective_rules_no_inherit() {
-        val settings = ToggleSettings()
-        settings.loadState(ToggleSettings.State().apply {
+        val settings = SwitchSettings()
+        settings.loadState(SwitchSettings.State().apply {
             global = LanguageRulesState(
                 wordGroups = mutableListOf(GroupState(mutableListOf("true", "false"))),
                 charGroups = mutableListOf(),
@@ -75,8 +75,8 @@ class ToggleSettingsRoundTripTest {
     }
 
     @Test fun effective_rules_unknown_language_returns_global() {
-        val settings = ToggleSettings()
-        settings.loadState(ToggleSettings.State().apply {
+        val settings = SwitchSettings()
+        settings.loadState(SwitchSettings.State().apply {
             global = LanguageRulesState(
                 wordGroups = mutableListOf(GroupState(mutableListOf("true", "false"))),
                 charGroups = mutableListOf(),
@@ -87,8 +87,8 @@ class ToggleSettingsRoundTripTest {
     }
 
     @Test fun invalid_groups_filtered_on_load() {
-        val settings = ToggleSettings()
-        settings.loadState(ToggleSettings.State().apply {
+        val settings = SwitchSettings()
+        settings.loadState(SwitchSettings.State().apply {
             global = LanguageRulesState(
                 wordGroups = mutableListOf(
                     GroupState(mutableListOf("true", "false")),

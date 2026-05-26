@@ -1,4 +1,4 @@
-package dev.bartoszmaka.toggle.util
+package dev.bartoszmaka.switch.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

@@ -1,21 +1,21 @@
-package dev.bartoszmaka.toggle.provider
+package dev.bartoszmaka.switch.provider
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
-import dev.bartoszmaka.toggle.util.Casing
+import dev.bartoszmaka.switch.util.Casing
 
-class WordToggleProvider : ToggleProvider {
+class WordSwitchProvider : SwitchProvider {
 
-    override fun findToggle(
+    override fun findSwitch(
         file: PsiFile,
         editor: Editor,
         caretOffset: Int,
         rules: EffectiveRules,
-    ): ToggleMatch? {
-        val match = findToggleInText(editor.document.text, caretOffset, rules.wordGroups)
+    ): SwitchMatch? {
+        val match = findSwitchInText(editor.document.text, caretOffset, rules.wordGroups)
             ?: return null
-        return ToggleMatch(
+        return SwitchMatch(
             range = TextRange(match.start, match.endExclusive),
             replacement = match.replacement,
         )
@@ -52,10 +52,10 @@ class WordToggleProvider : ToggleProvider {
         private fun isAllLowercaseAscii(items: List<String>): Boolean =
             items.all { s -> s.isNotEmpty() && s.all { it in 'a'..'z' } }
 
-        fun findToggleInText(
+        fun findSwitchInText(
             text: String,
             caretOffset: Int,
-            groups: List<ToggleGroup>,
+            groups: List<SwitchGroup>,
         ): RawMatch? {
             val (start, end) = wordBoundsAt(text, caretOffset) ?: return null
             val word = text.substring(start, end)

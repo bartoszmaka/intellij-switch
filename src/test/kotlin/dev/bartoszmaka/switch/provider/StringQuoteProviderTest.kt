@@ -1,4 +1,4 @@
-package dev.bartoszmaka.toggle.provider
+package dev.bartoszmaka.switch.provider
 
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
@@ -7,21 +7,21 @@ class StringQuoteProviderTest : BasePlatformTestCase() {
 
     private val provider = StringQuoteProvider()
 
-    private fun runToggle(filename: String, before: String, expected: String) {
+    private fun runSwitch(filename: String, before: String, expected: String) {
         myFixture.configureByText(filename, before)
-        val match = provider.findToggle(
+        val match = provider.findSwitch(
             myFixture.file,
             myFixture.editor,
             myFixture.editor.caretModel.offset,
             EffectiveRules(),
         )
         assertNotNull("provider returned null", match)
-        val toggle = match!!
+        val switch = match!!
         WriteCommandAction.runWriteCommandAction(project) {
             myFixture.editor.document.replaceString(
-                toggle.range.startOffset,
-                toggle.range.endOffset,
-                toggle.replacement,
+                switch.range.startOffset,
+                switch.range.endOffset,
+                switch.replacement,
             )
         }
         assertEquals(expected, myFixture.editor.document.text)
@@ -32,7 +32,7 @@ class StringQuoteProviderTest : BasePlatformTestCase() {
             "A.java",
             "class A { String s = \"he<caret>llo\"; }",
         )
-        val match = provider.findToggle(
+        val match = provider.findSwitch(
             myFixture.file,
             myFixture.editor,
             myFixture.editor.caretModel.offset,
@@ -43,7 +43,7 @@ class StringQuoteProviderTest : BasePlatformTestCase() {
 
     fun testPlainTextReturnsNull() {
         myFixture.configureByText("a.txt", "\"he<caret>llo\"")
-        val match = provider.findToggle(
+        val match = provider.findSwitch(
             myFixture.file,
             myFixture.editor,
             myFixture.editor.caretModel.offset,
@@ -57,7 +57,7 @@ class StringQuoteProviderTest : BasePlatformTestCase() {
             "A.java",
             "class A { String s = \"hello\"<caret>; }",
         )
-        val match = provider.findToggle(
+        val match = provider.findSwitch(
             myFixture.file,
             myFixture.editor,
             myFixture.editor.caretModel.offset,
@@ -67,7 +67,7 @@ class StringQuoteProviderTest : BasePlatformTestCase() {
     }
 
     fun testKotlinDoubleToTriple() {
-        runToggle(
+        runSwitch(
             "a.kt",
             "val s = \"hel<caret>lo\"",
             "val s = \"\"\"hello\"\"\"",
@@ -75,7 +75,7 @@ class StringQuoteProviderTest : BasePlatformTestCase() {
     }
 
     fun testKotlinTripleToDouble() {
-        runToggle(
+        runSwitch(
             "a.kt",
             "val s = \"\"\"hel<caret>lo\"\"\"",
             "val s = \"hello\"",
@@ -83,7 +83,7 @@ class StringQuoteProviderTest : BasePlatformTestCase() {
     }
 
     fun testKotlinCaretOnOpeningQuoteTriggers() {
-        runToggle(
+        runSwitch(
             "a.kt",
             "val s = <caret>\"hello\"",
             "val s = \"\"\"hello\"\"\"",
@@ -96,7 +96,7 @@ class StringQuoteProviderTest : BasePlatformTestCase() {
         // spec, this should trigger. (Earlier plan added +1 which moved past the closing
         // quote into the "falls through" region; corrected here.)
         myFixture.configureByText("a.kt", "val s = \"hello<caret>\"")
-        val match = provider.findToggle(
+        val match = provider.findSwitch(
             myFixture.file,
             myFixture.editor,
             myFixture.editor.caretModel.offset,

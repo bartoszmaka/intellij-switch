@@ -1,18 +1,18 @@
-package dev.bartoszmaka.toggle.provider
+package dev.bartoszmaka.switch.provider
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiLanguageInjectionHost
 import com.intellij.psi.util.PsiTreeUtil
 
-class StringQuoteProvider : ToggleProvider {
+class StringQuoteProvider : SwitchProvider {
 
-    override fun findToggle(
+    override fun findSwitch(
         file: PsiFile,
         editor: Editor,
         caretOffset: Int,
         rules: EffectiveRules,
-    ): ToggleMatch? {
+    ): SwitchMatch? {
         val leaf = file.findElementAt(caretOffset) ?: return null
         val literal = PsiTreeUtil.getParentOfType(leaf, PsiLanguageInjectionHost::class.java, false)
             ?: return null
@@ -26,7 +26,7 @@ class StringQuoteProvider : ToggleProvider {
         val nextDelim = nextDelimiter(currentDelim, quoteSet) ?: return null
         val newContent = transformContent(content, currentDelim, nextDelim)
 
-        return ToggleMatch(
+        return SwitchMatch(
             range = range,
             replacement = nextDelim + newContent + nextDelim,
         )

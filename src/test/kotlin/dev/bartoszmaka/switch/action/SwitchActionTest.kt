@@ -1,4 +1,4 @@
-package dev.bartoszmaka.toggle.action
+package dev.bartoszmaka.switch.action
 
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -8,12 +8,12 @@ import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
-class ToggleActionTest : BasePlatformTestCase() {
+class SwitchActionTest : BasePlatformTestCase() {
 
     private fun performAction() {
         val action = ActionManager.getInstance()
-            .getAction("dev.bartoszmaka.toggle.ToggleAction")
-            ?: error("ToggleAction not registered")
+            .getAction("dev.bartoszmaka.switch.SwitchAction")
+            ?: error("SwitchAction not registered")
         val context = SimpleDataContext.builder()
             .add(CommonDataKeys.EDITOR, myFixture.editor)
             .add(CommonDataKeys.PSI_FILE, myFixture.file)
@@ -23,7 +23,7 @@ class ToggleActionTest : BasePlatformTestCase() {
         action.actionPerformed(event)
     }
 
-    fun testTogglesBooleanInJavaFile() {
+    fun testSwitchesBooleanInJavaFile() {
         myFixture.configureByText(
             "A.java",
             "class A { boolean b = tr<caret>ue; }",
@@ -32,7 +32,7 @@ class ToggleActionTest : BasePlatformTestCase() {
         assertEquals("class A { boolean b = false; }", myFixture.editor.document.text)
     }
 
-    fun testTogglesCharInJavaFile() {
+    fun testSwitchesCharInJavaFile() {
         myFixture.configureByText(
             "A.java",
             "class A { int x = 1 <caret>+ 2; }",
@@ -41,7 +41,7 @@ class ToggleActionTest : BasePlatformTestCase() {
         assertEquals("class A { int x = 1 - 2; }", myFixture.editor.document.text)
     }
 
-    fun testTogglesKotlinStringQuoteStyle() {
+    fun testSwitchesKotlinStringQuoteStyle() {
         myFixture.configureByText(
             "a.kt",
             "val s = \"hel<caret>lo\"",

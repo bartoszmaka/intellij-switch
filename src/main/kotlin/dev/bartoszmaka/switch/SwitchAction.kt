@@ -1,4 +1,4 @@
-package dev.bartoszmaka.toggle
+package dev.bartoszmaka.switch
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
@@ -6,19 +6,19 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.thisLogger
-import dev.bartoszmaka.toggle.provider.CharToggleProvider
-import dev.bartoszmaka.toggle.provider.StringQuoteProvider
-import dev.bartoszmaka.toggle.provider.ToggleMatch
-import dev.bartoszmaka.toggle.provider.ToggleProvider
-import dev.bartoszmaka.toggle.provider.WordToggleProvider
-import dev.bartoszmaka.toggle.settings.ToggleSettings
+import dev.bartoszmaka.switch.provider.CharSwitchProvider
+import dev.bartoszmaka.switch.provider.StringQuoteProvider
+import dev.bartoszmaka.switch.provider.SwitchMatch
+import dev.bartoszmaka.switch.provider.SwitchProvider
+import dev.bartoszmaka.switch.provider.WordSwitchProvider
+import dev.bartoszmaka.switch.settings.SwitchSettings
 
-class ToggleAction : AnAction() {
+class SwitchAction : AnAction() {
 
-    private val providers: List<ToggleProvider> = listOf(
+    private val providers: List<SwitchProvider> = listOf(
         StringQuoteProvider(),
-        WordToggleProvider(),
-        CharToggleProvider(),
+        WordSwitchProvider(),
+        CharSwitchProvider(),
     )
 
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
@@ -35,15 +35,15 @@ class ToggleAction : AnAction() {
         val project = e.project ?: return
 
         val caretOffset = editor.caretModel.primaryCaret.offset
-        val rules = ToggleSettings.getInstance().effectiveRulesFor(file.language.id)
+        val rules = SwitchSettings.getInstance().effectiveRulesFor(file.language.id)
 
-        val match: ToggleMatch = providers.firstNotNullOfOrNull { provider ->
-            runCatching { provider.findToggle(file, editor, caretOffset, rules) }
-                .onFailure { thisLogger().warn("Toggle provider ${provider::class.simpleName} failed", it) }
+        val match: SwitchMatch = providers.firstNotNullOfOrNull { provider ->
+            runCatching { provider.findSwitch(file, editor, caretOffset, rules) }
+                .onFailure { thisLogger().warn("Switch provider ${provider::class.simpleName} failed", it) }
                 .getOrNull()
         } ?: return
 
-        WriteCommandAction.runWriteCommandAction(project, "Toggle", null, {
+        WriteCommandAction.runWriteCommandAction(project, "Switch", null, {
             editor.document.replaceString(
                 match.range.startOffset,
                 match.range.endOffset,

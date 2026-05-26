@@ -1,33 +1,33 @@
 <idea-plugin>
-    <id>dev.bartoszmaka.toggle</id>
-    <name>Toggle</name>
+    <id>dev.bartoszmaka.switch</id>
+    <name>Switch</name>
     <vendor email="bartoszmaka95@gmail.com">bartoszmaka</vendor>
     <description><![CDATA[
-        Toggles the thing under the caret: booleans (true/false), single-character pairs
+        Switches the thing under the caret: booleans (true/false), single-character pairs
         (+/-, &gt;/&lt;), and string quote styles. Configurable globally and per language.
         <br/><br/>
-        <b>Action:</b> <code>Toggle the Thing Under Caret</code>
-        (id: <code>dev.bartoszmaka.toggle.ToggleAction</code>).
+        <b>Action:</b> <code>Switch the Thing Under Caret</code>
+        (id: <code>dev.bartoszmaka.switch.SwitchAction</code>).
         Bind via <i>Settings &rarr; Keymap</i>, or map it in <a href="https://plugins.jetbrains.com/plugin/164-ideavim">IdeaVim</a>:
-        <pre>nnoremap &lt;leader&gt;t :action dev.bartoszmaka.toggle.ToggleAction&lt;CR&gt;</pre>
+        <pre>nnoremap &lt;leader&gt;t :action dev.bartoszmaka.switch.SwitchAction&lt;CR&gt;</pre>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="dev.bartoszmaka.toggle.settings.ToggleSettings"/>
+        <applicationService serviceImplementation="dev.bartoszmaka.switch.settings.SwitchSettings"/>
         <applicationConfigurable
             parentId="tools"
-            instance="dev.bartoszmaka.toggle.settings.ToggleSettingsConfigurable"
-            id="dev.bartoszmaka.toggle.settings.ToggleSettingsConfigurable"
-            displayName="Toggle"/>
+            instance="dev.bartoszmaka.switch.settings.SwitchSettingsConfigurable"
+            id="dev.bartoszmaka.switch.settings.SwitchSettingsConfigurable"
+            displayName="Switch"/>
     </extensions>
 
     <actions>
         <action
-            id="dev.bartoszmaka.toggle.ToggleAction"
-            class="dev.bartoszmaka.toggle.ToggleAction"
-            text="Toggle the Thing Under Caret"
-            description="Toggle boolean, operator, or quote under cursor"/>
+            id="dev.bartoszmaka.switch.SwitchAction"
+            class="dev.bartoszmaka.switch.SwitchAction"
+            text="Switch the Thing Under Caret"
+            description="Switch boolean, operator, or quote under cursor"/>
     </actions>
 </idea-plugin>

@@ -1,20 +1,20 @@
-package dev.bartoszmaka.toggle.provider
+package dev.bartoszmaka.switch.provider
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 
-class CharToggleProvider : ToggleProvider {
+class CharSwitchProvider : SwitchProvider {
 
-    override fun findToggle(
+    override fun findSwitch(
         file: PsiFile,
         editor: Editor,
         caretOffset: Int,
         rules: EffectiveRules,
-    ): ToggleMatch? {
-        val match = findToggleInText(editor.document.text, caretOffset, rules.charGroups)
+    ): SwitchMatch? {
+        val match = findSwitchInText(editor.document.text, caretOffset, rules.charGroups)
             ?: return null
-        return ToggleMatch(
+        return SwitchMatch(
             range = TextRange(match.start, match.endExclusive),
             replacement = match.replacement,
         )
@@ -23,10 +23,10 @@ class CharToggleProvider : ToggleProvider {
     data class RawMatch(val start: Int, val endExclusive: Int, val replacement: String)
 
     companion object {
-        fun findToggleInText(
+        fun findSwitchInText(
             text: String,
             caretOffset: Int,
-            groups: List<ToggleGroup>,
+            groups: List<SwitchGroup>,
         ): RawMatch? {
             // Try the char at caret first.
             tryAt(text, caretOffset, groups)?.let { return it }
@@ -35,7 +35,7 @@ class CharToggleProvider : ToggleProvider {
             return null
         }
 
-        private fun tryAt(text: String, idx: Int, groups: List<ToggleGroup>): RawMatch? {
+        private fun tryAt(text: String, idx: Int, groups: List<SwitchGroup>): RawMatch? {
             if (idx < 0 || idx >= text.length) return null
             val ch = text[idx].toString()
             for (group in groups) {

@@ -1,4 +1,4 @@
-package dev.bartoszmaka.toggle.settings
+package dev.bartoszmaka.switch.settings
 
 import com.intellij.lang.Language
 import com.intellij.openapi.ui.DialogWrapper
@@ -25,10 +25,10 @@ import javax.swing.JTextArea
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
-class ToggleSettingsComponent {
+class SwitchSettingsComponent {
 
-    private val state = ToggleSettings.getInstance().state
-    private val working: ToggleSettings.State = copyOf(state)
+    private val state = SwitchSettings.getInstance().state
+    private val working: SwitchSettings.State = copyOf(state)
 
     private val languageListModel = CollectionListModel<String>().apply {
         add(GLOBAL_LANGUAGE)
@@ -225,8 +225,8 @@ class ToggleSettingsComponent {
     }
 
     fun restoreDefaults() {
-        working.global = ToggleSettings.defaultGlobalState()
-        working.perLanguage = ToggleSettings.defaultPerLanguageState()
+        working.global = SwitchSettings.defaultGlobalState()
+        working.perLanguage = SwitchSettings.defaultPerLanguageState()
         rebuildLanguageList()
     }
 
@@ -238,8 +238,8 @@ class ToggleSettingsComponent {
         refreshRightPane()
     }
 
-    private fun copyOf(s: ToggleSettings.State): ToggleSettings.State {
-        val out = ToggleSettings.State()
+    private fun copyOf(s: SwitchSettings.State): SwitchSettings.State {
+        val out = SwitchSettings.State()
         out.global = copyLR(s.global)
         out.perLanguage = s.perLanguage
             .mapValues { copyLR(it.value) }
@@ -253,7 +253,7 @@ class ToggleSettingsComponent {
         inheritsGlobal = s.inheritsGlobal,
     )
 
-    private fun ToggleSettings.State.contentEquals(other: ToggleSettings.State): Boolean {
+    private fun SwitchSettings.State.contentEquals(other: SwitchSettings.State): Boolean {
         if (!global.contentEquals(other.global)) return false
         if (perLanguage.keys != other.perLanguage.keys) return false
         for ((language, rules) in perLanguage) {
@@ -313,9 +313,9 @@ class ToggleSettingsComponent {
         override fun doValidate(): ValidationInfo? {
             val items = parsedItems()
             val errors = if (isWord) {
-                ToggleGroupValidation.validateWordGroup(items)
+                SwitchGroupValidation.validateWordGroup(items)
             } else {
-                ToggleGroupValidation.validateCharGroup(items)
+                SwitchGroupValidation.validateCharGroup(items)
             }
             return if (errors.isEmpty()) null else ValidationInfo(errors.joinToString("; "), area)
         }
