@@ -6,8 +6,9 @@ the IntelliJ Platform.
 
 - **Booleans:** `true` ↔ `false`, `yes` ↔ `no`, `on` ↔ `off`, …
 - **Single-character pairs:** `+` ↔ `-`, `>` ↔ `<`, `&` ↔ `|`, `*` ↔ `/`
-- **String quote styles** (language-aware): `"` ↔ `'` (Ruby, Python), `"` ↔ `'` ↔ `` ` `` (JS/TS), `"` ↔ `"""` (Kotlin)
+- **String quote styles** (language-aware): `'` ↔ `"` ↔ `:symbol` (Ruby), `"` ↔ `'` (Python), `"` ↔ `'` ↔ `` ` `` (JS/TS), `"` ↔ `"""` (Kotlin)
 - **Arbitrary-length cycles:** `[nil, false, true]` advances on each press
+- **Forward and backwards:** a second action cycles in reverse for 3+ item cycles
 
 Configurable globally and per language via **Preferences → Tools → Switch**.
 
@@ -27,7 +28,8 @@ The resulting plugin zip is at `build/distributions/switch-*.zip`. Install via *
 2. Position the caret on a boolean, operator, or quote and press your bound key.
 3. Customize groups via **Preferences → Tools → Switch**.
 
-Action id: `dev.bartoszmaka.switch.SwitchAction`.
+Action ids: `dev.bartoszmaka.switch.SwitchAction` (forward) and
+`dev.bartoszmaka.switch.SwitchBackwardsAction` (reverse).
 
 ## Example mappings
 
@@ -38,9 +40,11 @@ Add a mapping in `~/.ideavimrc`:
 ```vim
 " Single keystroke
 nnoremap <leader>s :action dev.bartoszmaka.switch.SwitchAction<CR>
+nnoremap <leader>S :action dev.bartoszmaka.switch.SwitchBackwardsAction<CR>
 
 " Or the switch.vim default
 nnoremap gs :action dev.bartoszmaka.switch.SwitchAction<CR>
+nnoremap gS :action dev.bartoszmaka.switch.SwitchBackwardsAction<CR>
 ```
 
 ### Native JetBrains keymap

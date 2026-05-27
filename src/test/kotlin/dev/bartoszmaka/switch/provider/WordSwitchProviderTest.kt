@@ -78,6 +78,20 @@ class WordSwitchProviderTest {
         assertEquals("baz_qux", m.replacement)
     }
 
+    @Test fun reverse_two_cycle_swaps() {
+        val m = WordSwitchProvider.findSwitchInText("x = true", 5, listOf(lowerGroup), reverse = true)!!
+        assertEquals("false", m.replacement)
+    }
+
+    @Test fun reverse_three_cycle_steps_backwards() {
+        val m1 = WordSwitchProvider.findSwitchInText("nil", 0, listOf(triCycle), reverse = true)!!
+        assertEquals("true", m1.replacement)
+        val m2 = WordSwitchProvider.findSwitchInText("false", 0, listOf(triCycle), reverse = true)!!
+        assertEquals("nil", m2.replacement)
+        val m3 = WordSwitchProvider.findSwitchInText("true", 0, listOf(triCycle), reverse = true)!!
+        assertEquals("false", m3.replacement)
+    }
+
     @Test fun digits_prevent_all_lowercase_casing_preservation() {
         val grp = SwitchGroup(listOf("low1", "high2"))
         // "low1" with all-lowercase ASCII letters but digits is NOT all-lowercase ASCII

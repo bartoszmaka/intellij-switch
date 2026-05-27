@@ -13,7 +13,7 @@ import dev.bartoszmaka.switch.provider.SwitchProvider
 import dev.bartoszmaka.switch.provider.WordSwitchProvider
 import dev.bartoszmaka.switch.settings.SwitchSettings
 
-class SwitchAction : AnAction() {
+abstract class SwitchActionBase(private val reverse: Boolean) : AnAction() {
 
     private val providers: List<SwitchProvider> = listOf(
         StringQuoteProvider(),
@@ -38,7 +38,7 @@ class SwitchAction : AnAction() {
         val rules = SwitchSettings.getInstance().effectiveRulesFor(file.language.id)
 
         val match: SwitchMatch = providers.firstNotNullOfOrNull { provider ->
-            runCatching { provider.findSwitch(file, editor, caretOffset, rules) }
+            runCatching { provider.findSwitch(file, editor, caretOffset, rules, reverse) }
                 .onFailure { thisLogger().warn("Switch provider ${provider::class.simpleName} failed", it) }
                 .getOrNull()
         } ?: return
@@ -52,3 +52,7 @@ class SwitchAction : AnAction() {
         })
     }
 }
+
+class SwitchAction : SwitchActionBase(reverse = false)
+
+class SwitchBackwardsAction : SwitchActionBase(reverse = true)

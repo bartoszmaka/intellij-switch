@@ -57,4 +57,16 @@ class CharSwitchProviderTest {
         val m = switch("-", 0, listOf(plusMinus))!!
         assertEquals("+", m.replacement)
     }
+
+    @Test fun reverse_two_char_cycle() {
+        // For a 2-element cycle, reverse and forward produce the same neighbor.
+        val m = CharSwitchProvider.findSwitchInText("+", 0, listOf(plusMinus), reverse = true)!!
+        assertEquals("-", m.replacement)
+    }
+
+    @Test fun reverse_three_char_cycle_steps_backwards() {
+        val triCycle = SwitchGroup(listOf("a", "b", "c"))
+        val m = CharSwitchProvider.findSwitchInText("a", 0, listOf(triCycle), reverse = true)!!
+        assertEquals("c", m.replacement)
+    }
 }

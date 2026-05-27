@@ -22,5 +22,6 @@ interface SwitchProvider {
         editor: Editor,
         caretOffset: Int,
         rules: EffectiveRules,
+        reverse: Boolean = false,
     ): SwitchMatch?
 }

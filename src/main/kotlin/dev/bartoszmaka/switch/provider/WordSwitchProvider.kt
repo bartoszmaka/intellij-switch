@@ -12,8 +12,9 @@ class WordSwitchProvider : SwitchProvider {
         editor: Editor,
         caretOffset: Int,
         rules: EffectiveRules,
+        reverse: Boolean,
     ): SwitchMatch? {
-        val match = findSwitchInText(editor.document.text, caretOffset, rules.wordGroups)
+        val match = findSwitchInText(editor.document.text, caretOffset, rules.wordGroups, reverse)
             ?: return null
         return SwitchMatch(
             range = TextRange(match.start, match.endExclusive),
@@ -56,6 +57,7 @@ class WordSwitchProvider : SwitchProvider {
             text: String,
             caretOffset: Int,
             groups: List<SwitchGroup>,
+            reverse: Boolean = false,
         ): RawMatch? {
             val (start, end) = wordBoundsAt(text, caretOffset) ?: return null
             val word = text.substring(start, end)
@@ -69,7 +71,10 @@ class WordSwitchProvider : SwitchProvider {
                     group.items.indexOf(word)
                 }
                 if (matchIdx < 0) continue
-                val next = group.items[(matchIdx + 1) % group.items.size]
+                val size = group.items.size
+                val dir = if (reverse) -1 else 1
+                val nextIdx = ((matchIdx + dir) % size + size) % size
+                val next = group.items[nextIdx]
                 val replacement = if (lowercaseGroup) Casing.apply(next, Casing.detect(word)) else next
                 return RawMatch(start, end, replacement)
             }

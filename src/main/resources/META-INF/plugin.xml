@@ -6,10 +6,13 @@
         Switches the thing under the caret: booleans (true/false), single-character pairs
         (+/-, &gt;/&lt;), and string quote styles. Configurable globally and per language.
         <br/><br/>
-        <b>Action:</b> <code>Switch the Thing Under Caret</code>
-        (id: <code>dev.bartoszmaka.switch.SwitchAction</code>).
-        Bind via <i>Settings &rarr; Keymap</i>, or map it in <a href="https://plugins.jetbrains.com/plugin/164-ideavim">IdeaVim</a>:
-        <pre>nnoremap &lt;leader&gt;t :action dev.bartoszmaka.switch.SwitchAction&lt;CR&gt;</pre>
+        <b>Actions:</b> <code>Switch the Thing Under Caret</code>
+        (id: <code>dev.bartoszmaka.switch.SwitchAction</code>) and
+        <code>Switch the Thing Under Caret (Backwards)</code>
+        (id: <code>dev.bartoszmaka.switch.SwitchBackwardsAction</code>) for reverse cycling.
+        Bind via <i>Settings &rarr; Keymap</i>, or map them in <a href="https://plugins.jetbrains.com/plugin/164-ideavim">IdeaVim</a>:
+        <pre>nnoremap &lt;leader&gt;t :action dev.bartoszmaka.switch.SwitchAction&lt;CR&gt;
+nnoremap &lt;leader&gt;T :action dev.bartoszmaka.switch.SwitchBackwardsAction&lt;CR&gt;</pre>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -29,5 +32,10 @@
             class="dev.bartoszmaka.switch.SwitchAction"
             text="Switch the Thing Under Caret"
             description="Switch boolean, operator, or quote under cursor"/>
+        <action
+            id="dev.bartoszmaka.switch.SwitchBackwardsAction"
+            class="dev.bartoszmaka.switch.SwitchBackwardsAction"
+            text="Switch the Thing Under Caret (Backwards)"
+            description="Switch boolean, operator, or quote under cursor in reverse order"/>
     </actions>
 </idea-plugin>
